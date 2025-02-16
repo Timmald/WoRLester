@@ -88,9 +88,9 @@ class DotGym(gym.Env):
             self.map = [list(l.strip()) for l in reader.readlines()]
         self.update_interval = 5
         self.stepNum = 0
-        self.agent_pos = np.random.random_integers(0,min(len(self.map),len(self.map[0])),size=2)
+        self.agent_pos = np.random.random_integers(0,min(len(self.map),len(self.map[0]))-1,size=2)
         while not self.validCoord(self.agent_pos):
-            self.agent_pos = np.random.random_integers(0,min(len(self.map),len(self.map[0])),size=2)
+            self.agent_pos = np.random.random_integers(0,min(len(self.map),len(self.map[0]))-1,size=2)
         self.obs_space = gym.spaces.Dict({#TODO: Fix state
             "agent":gym.spaces.Box(0,min(len(self.map),len(self.map[0])),shape=(2,),dtype=int),
             "target":gym.spaces.Box(0,min(len(self.map),len(self.map[0])),shape=(2,),dtype=int)#TODO: Change the state
@@ -103,9 +103,11 @@ class DotGym(gym.Env):
             3:[-1,0]
         }
 
-    def reset(self,seed):
-        super().reset(seed)
-        self.agent_pos = np.random.random_integers(0,min(len(self.map),len(self.map[0])),size=2)
+    def reset(self,seed=None):
+        super().reset()
+        self.agent_pos = np.random.random_integers(0,min(len(self.map),len(self.map[0]))-1,size=2)
+        while not self.validCoord(self.agent_pos):
+            self.agent_pos = np.random.random_integers(0,min(len(self.map),len(self.map[0]))-1,size=2)
         self.stepNum = 0
         return self.get_obs()
     
@@ -120,7 +122,7 @@ class DotGym(gym.Env):
         except:
             return -9999
 
-    def step(self,action):
+    def step(self,action,headless = False):
         if self.stepNum % self.update_interval == 0:
             self.updateTables()
         self.last_action = action
@@ -129,12 +131,13 @@ class DotGym(gym.Env):
         np.clip(self.agent_pos[1]+self.action_to_direction[action][1], 0, len(self.map[0])-1)   # Limit y within [y_min, y_max]
         ]))
 
+        truncated = self.stepNum > 5000
         self.agent_pos = newCoord if self.validCoord(newCoord) else self.agent_pos
-        reward = self.reward()
-        truncated = False
+        reward = self.reward() if not truncated else -float("inf")
         terminated = self.hasWon()
         self.stepNum+=1
-        self.display()
+        if not headless:
+            self.display()
         return self.get_obs(),reward,terminated,truncated
 
 if __name__ == "__main__":
