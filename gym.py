@@ -19,17 +19,29 @@ class DotGym(gym.Env):
     def distance(self,coord1,coord2):
         return math.sqrt((coord2[0]-coord1[0])**2+(coord2[1]-coord1[1])**2)
 
-    def inObs(self,coords:list[int,int]):
-        fullTabs = [tab for tab in self.tables if not tab.open]
-        for obs in self.obstacles:
-            if obs[0][0]<=coords[0]<=obs[1][0] and obs[0][1]<=coords[1]<=obs[1][1]:
+    def inObs(self,coords:list[int,int],tabs=True):
+        if tabs:
+            fullTabs = [tab for tab in self.tables if not tab.open]
+            for obs in self.obstacles:
+                if obs[0][0]<=coords[0]<=obs[1][0] and obs[0][1]<=coords[1]<=obs[1][1]:
+                    return True
+            if any([all(tab.coords == coords) for tab in fullTabs]):
                 return True
-        if any([all(tab.coords == coords) for tab in fullTabs]):
-            return True
-        return False
+            return False
+        else:
+            for obs in self.obstacles:
+                if obs[0][0]<=coords[0]<=obs[1][0] and obs[0][1]<=coords[1]<=obs[1][1]:
+                    return True
+            return False
 
     def hasWon(self):
         return any([all(self.agent_pos == tab.coords) for tab in self.tables if tab.open])
+
+    def genTableCoords(self):
+        tableCoords = np.random.random_integers(0,self.size-1,size=2)
+        while self.inObs(tableCoords,tabs = False):
+            tableCoords = np.random.random_integers(0,self.size-1,size=2)
+        return tableCoords
 
     def updateTables(self):
         for tab in self.tables:
@@ -90,7 +102,7 @@ class DotGym(gym.Env):
         self.size = 10
         self.stepNum = 0
         self.obstacles = [((3,2),(5,6))]
-        self.tables = [Table(np.random.random_integers(0,self.size-1,size=2))for i in range(4)]
+        self.tables = [Table(self.genTableCoords())for i in range(4)]
         self.agent_pos = np.random.random_integers(0,self.size-1,size=2)
         self.obs_space = gym.spaces.Dict({
             "agent":gym.spaces.Box(0,self.size-1,shape=(2,),dtype=int),
