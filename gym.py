@@ -12,11 +12,13 @@ class DotGym(gym.Env):
         charArr = []
         for i in range(self.size):
             charArr.append(["⬜️"]*self.size)#TODO: Pointer shit
-        charArr[self.agent_pos[0]][self.agent_pos[1]] = "🕵️"
+        charArr[self.agent_pos[0]][self.agent_pos[1]] = "🤮"
         charArr[self.target_pos[0]][self.target_pos[1]] = "🎯"
         print("-------------------")
         for line in charArr:
-            print(line)
+            for char in line:
+                print(char,end="")
+            print("\n")
 
 
     def __init__(self,size):
