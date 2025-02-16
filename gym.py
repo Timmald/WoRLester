@@ -55,7 +55,7 @@ class DotGym(gym.Env):
                 if doubleBlit:
                     self.screen.blit(self.goose, (self.square_size*x,self.square_size*y))
         pygame.display.flip()
-        time.sleep(.5)
+        time.sleep(.1)
         # actionList = ["➡️","⬇️","⬅️","⬆️"]
         # charArr = []
         # for i in range(self.size):
