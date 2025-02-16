@@ -3,6 +3,7 @@ import numpy as np
 import random
 import math
 import pygame
+import time
 
 class Table:
     def __init__(self, coords):
@@ -35,27 +36,51 @@ class DotGym(gym.Env):
             tab.update()
 
     def display(self):
-        actionList = ["➡️","⬇️","⬅️","⬆️"]
-        charArr = []
-        for i in range(self.size):
-            charArr.append(["⬜️"]*self.size)
-        charArr[self.agent_pos[0]][self.agent_pos[1]] = "🤮"
-        for tab in self.tables:
-            charArr[tab.coords[0]][tab.coords[1]] = "🍴" if tab.open else "🚫"
-        for obs in self.obstacles:
-            for row in range(obs[0][0],obs[1][0]+1):
-                for col in range(obs[0][1],obs[1][1]+1):
-                    charArr[row][col] = "🆘"
-        print("-------------------")
-        print(f"STEP #{self.stepNum}: {actionList[self.last_action]}")
-        for line in charArr:
-            for char in line:
-                print(char,end="")
-            print("\n")
-        return charArr
+        self.screen.fill((255, 255, 255))
+        for x in range(self.size):
+            for y in range(self.size):
+                toBlit = None
+                doubleBlit = False
+                if self.agent_pos == [x, y]:
+                    toBlit = self.samuel
+                for tab in self.tables:
+                    if all(tab.coords == [x, y]):
+                        toBlit = self.table
+                        if not tab.open:
+                            doubleBlit = True
+                if not toBlit:
+                    continue
+                self.screen.blit(toBlit, (64*x, 64*y))
+                if doubleBlit:
+                    self.screen.blit(self.goose, (64*x, 64*y))
+        pygame.display.flip()
+        time.sleep(1)
+        # actionList = ["➡️","⬇️","⬅️","⬆️"]
+        # charArr = []
+        # for i in range(self.size):
+        #     charArr.append(["⬜️"]*self.size)
+        # charArr[self.agent_pos[0]][self.agent_pos[1]] = "🤮"
+        # for tab in self.tables:
+        #     charArr[tab.coords[0]][tab.coords[1]] = "🍴" if tab.open else "🚫"
+        # for obs in self.obstacles:
+        #     for row in range(obs[0][0],obs[1][0]+1):
+        #         for col in range(obs[0][1],obs[1][1]+1):
+        #             charArr[row][col] = "🆘"
+        # print("-------------------")
+        # print(f"STEP #{self.stepNum}: {actionList[self.last_action]}")
+        # for line in charArr:
+        #     for char in line:
+        #         print(char,end="")
+        #     print("\n")
 
 
     def __init__(self):
+        self.screen = pygame.display.set_mode((64 * 10, 64 * 10))
+        self.samuel = pygame.transform.scale(pygame.image.load("samuel.png").convert_alpha(), (64, 64))
+        self.goose = pygame.transform.scale(pygame.image.load("goose.png").convert_alpha(), (64, 64))
+        self.table = pygame.transform.scale(pygame.image.load("table.png").convert_alpha(), (64, 64))
+        self.clock = pygame.time.Clock()
+        self.delta_time = 0.1
         self.update_interval = 5
         self.size = 10
         self.stepNum = 0
@@ -100,39 +125,10 @@ class DotGym(gym.Env):
         self.display()
         return self.get_obs(),reward,terminated,truncated
 
+
+mygym = DotGym()
 pygame.init()
-screen = pygame.display.set_mode((320, 320))
-samuel = pygame.transform.scale(pygame.image.load("samuel.png").convert_alpha(), (64, 64))
-goose = pygame.transform.scale(pygame.image.load("goose.png").convert_alpha(), (64, 64))
-table = pygame.transform.scale(pygame.image.load("table.png").convert_alpha(), (64, 64))
-
-mygym = DotGym(5)
-
-clock = pygame.time.Clock()
-running = True
-x = 0
-delta_time = 0.1
 
 action = random.randint(0, 3)
 while not mygym.step(action)[2]: # while it's not terminated
-    screen.fill((255, 255, 255))
-    display = mygym.display()
-    for x in range(5):
-        for y in range(5):
-            toBlit = None
-            emoji = display[x][y]
-            match emoji:
-                case '⬜️':
-                    toBlit = goose
-                case '🤮':
-                    toBlit = samuel
-                case '🎯':
-                    toBlit = table
-            screen.blit(toBlit, (64*x, 64*y))
-#mygym = DotGym()
-#action = random.randint(0,3)
-#while not mygym.step(action)[2]: #while it's not terminated
-    #action = random.randint(0,3)
-    #pygame.display.flip()
-    #delta_time = clock.tick(1) / 1000
-    #delta_time = max(0.001, min(0.1, delta_time))
+    action = random.randint(0, 3)
