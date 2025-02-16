@@ -137,10 +137,10 @@ class DotGym(gym.Env):
         self.display()
         return self.get_obs(),reward,terminated,truncated
 
+if __name__ == "__main__":
+    mygym = DotGym()
+    pygame.init()
 
-mygym = DotGym()
-pygame.init()
-
-action = random.randint(0, 3)
-while not mygym.step(action)[2]: # while it's not terminated
     action = random.randint(0, 3)
+    while not mygym.step(action)[2]: # while it's not terminated
+        action = random.randint(0, 3)
