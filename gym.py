@@ -48,13 +48,17 @@ class DotGym(gym.Env):
                         toBlit = self.table
                         if not tab.open:
                             doubleBlit = True
+                for obs in self.obstacles:
+                    if x in range(obs[0][0], obs[1][0]+1):
+                        if y in range(obs[0][1], obs[1][1]+1):
+                            toBlit = self.javier
                 if not toBlit:
                     continue
                 self.screen.blit(toBlit, (64*x, 64*y))
                 if doubleBlit:
                     self.screen.blit(self.goose, (64*x, 64*y))
         pygame.display.flip()
-        time.sleep(1)
+        time.sleep(.1)
         # actionList = ["➡️","⬇️","⬅️","⬆️"]
         # charArr = []
         # for i in range(self.size):
@@ -79,6 +83,7 @@ class DotGym(gym.Env):
         self.samuel = pygame.transform.scale(pygame.image.load("samuel.png").convert_alpha(), (64, 64))
         self.goose = pygame.transform.scale(pygame.image.load("goose.png").convert_alpha(), (64, 64))
         self.table = pygame.transform.scale(pygame.image.load("table.png").convert_alpha(), (64, 64))
+        self.javier = pygame.transform.scale(pygame.image.load("javier.png").convert_alpha(), (64, 64))
         self.clock = pygame.time.Clock()
         self.delta_time = 0.1
         self.update_interval = 5
