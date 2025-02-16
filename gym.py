@@ -32,7 +32,7 @@ class DotGym(gym.Env):
         for row in range(len(self.map)):
             for char in range(len(self.map[row])):
                 if self.isTable([row,char]):
-                    self.map[row][char] = ["🚫","🍴"][np.random.choice([0,1],p=[.9,.1])]
+                    self.map[row][char] = ["🚫","🍴"][np.random.choice([0,1],p=[.95,.05])]
 
     def display(self):
         self.screen.fill((255, 255, 255))
@@ -55,7 +55,7 @@ class DotGym(gym.Env):
                 if doubleBlit:
                     self.screen.blit(self.goose, (self.square_size*x,self.square_size*y))
         pygame.display.flip()
-        time.sleep(.1)
+        time.sleep(.5)
         # actionList = ["➡️","⬇️","⬅️","⬆️"]
         # charArr = []
         # for i in range(self.size):
@@ -133,7 +133,7 @@ class DotGym(gym.Env):
 
         truncated = self.stepNum > 5000
         self.agent_pos = newCoord if self.validCoord(newCoord) else self.agent_pos
-        reward = self.reward() if not truncated else -float("inf")
+        reward = self.reward() if not truncated else -(50*5000)
         terminated = self.hasWon()
         self.stepNum+=1
         if not headless:
