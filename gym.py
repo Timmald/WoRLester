@@ -15,6 +15,7 @@ class DotGym(gym.Env):
         charArr[self.agent_pos[0]][self.agent_pos[1]] = "🤮"
         charArr[self.target_pos[0]][self.target_pos[1]] = "🎯"
         print("-------------------")
+        print(f"STEP #{self.stepNum}:")
         for line in charArr:
             for char in line:
                 print(char,end="")
@@ -23,6 +24,7 @@ class DotGym(gym.Env):
 
     def __init__(self,size):
         self.size = size
+        self.stepNum = 0
         self.target_pos = np.random.random_integers(0,self.size-1,size=2)
         self.agent_pos = np.random.random_integers(0,self.size-1,size=2)
         self.obs_space = gym.spaces.Dict({
@@ -41,17 +43,21 @@ class DotGym(gym.Env):
         super().reset(seed)
         self.target_pos = np.random.random_integers(0,self.size-1,size=2)
         self.agent_pos = np.random.random_integers(0,self.size-1,size=2)
+        self.stepNum = 0
         return {"agent":self.agent_pos,"target":self.target_pos}
     
     def step(self,action):
         self.agent_pos = list(np.clip(np.array(self.agent_pos)+np.array(self.action_to_direction[action]),0,self.size-1))
         reward = -1*self.distance(self.target_pos,self.agent_pos)
         truncated = False
-        terminated = self.agent_pos == self.target_pos
+        terminated = all(self.agent_pos == self.target_pos)
+        self.stepNum+=1
         self.display()
         return {"agent":self.agent_pos,"target":self.target_pos},reward,terminated,truncated
 
 mygym = DotGym(5)
-mygym.step(0)
-mygym.step(2)
+action = random.randint(0,3)
+while not mygym.step(action)[2]: #while it's not terminated
+    action = random.randint(0,3)
+
         
