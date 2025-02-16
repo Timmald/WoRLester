@@ -2,7 +2,6 @@ import gymnasium as gym
 import numpy as np
 import random
 import math
-import pygame
 
 class Table:
     def __init__(self, coords):
@@ -52,7 +51,6 @@ class DotGym(gym.Env):
             for char in line:
                 print(char,end="")
             print("\n")
-        return charArr
 
 
     def __init__(self):
@@ -100,40 +98,9 @@ class DotGym(gym.Env):
         self.display()
         return self.get_obs(),reward,terminated,truncated
 
-pygame.init()
-screen = pygame.display.set_mode((320, 320))
-samuel = pygame.transform.scale(pygame.image.load("samuel.png").convert_alpha(), (64, 64))
-goose = pygame.transform.scale(pygame.image.load("goose.png").convert_alpha(), (64, 64))
-table = pygame.transform.scale(pygame.image.load("table.png").convert_alpha(), (64, 64))
+mygym = DotGym()
+action = random.randint(0,3)
+while not mygym.step(action)[2]: #while it's not terminated
+    action = random.randint(0,3)
 
-mygym = DotGym(5)
-
-clock = pygame.time.Clock()
-running = True
-x = 0
-delta_time = 0.1
-
-action = random.randint(0, 3)
-while not mygym.step(action)[2]: # while it's not terminated
-    screen.fill((255, 255, 255))
-    display = mygym.display()
-    for x in range(5):
-        for y in range(5):
-            toBlit = None
-            emoji = display[x][y]
-            match emoji:
-                case '⬜️':
-                    toBlit = goose
-                case '🤮':
-                    toBlit = samuel
-                case '🎯':
-                    toBlit = table
-            screen.blit(toBlit, (64*x, 64*y))
-#mygym = DotGym()
-#action = random.randint(0,3)
-#while not mygym.step(action)[2]: #while it's not terminated
-    #action = random.randint(0,3)
-    #pygame.display.flip()
-    #delta_time = clock.tick(1) / 1000
-    #delta_time = max(0.001, min(0.1, delta_time))
-
+        
