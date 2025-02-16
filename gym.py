@@ -5,12 +5,6 @@ import math
 import pygame
 import time
 
-class Table:
-    def __init__(self, coords):
-        self.coords = coords
-        self.open = random.choice([True,False])
-    def update(self):
-        self.open = random.choice([True,False])
 class DotGym(gym.Env):
 
     def get_obs(self):
@@ -19,56 +13,47 @@ class DotGym(gym.Env):
     def distance(self,coord1,coord2):
         return math.sqrt((coord2[0]-coord1[0])**2+(coord2[1]-coord1[1])**2)
 
-    def inObs(self,coords:list[int,int],tabs=True):
-        if tabs:
-            fullTabs = [tab for tab in self.tables if not tab.open]
-            for obs in self.obstacles:
-                if obs[0][0]<=coords[0]<=obs[1][0] and obs[0][1]<=coords[1]<=obs[1][1]:
-                    return True
-            if any([all(tab.coords == coords) for tab in fullTabs]):
-                return True
-            return False
-        else:
-            for obs in self.obstacles:
-                if obs[0][0]<=coords[0]<=obs[1][0] and obs[0][1]<=coords[1]<=obs[1][1]:
-                    return True
-            return False
+    def isTable(self,coord):
+        return self.map[coord[0]][coord[1]]== "🚫" or self.map[coord[0]][coord[1]]== "🍴"
 
     def hasWon(self):
-        return any([all(self.agent_pos == tab.coords) for tab in self.tables if tab.open])
+        return self.isTable(self.agent_pos)
 
-    def genTableCoords(self):
-        tableCoords = np.random.random_integers(0,self.size-1,size=2)
-        while self.inObs(tableCoords,tabs = False):
-            tableCoords = np.random.random_integers(0,self.size-1,size=2)
-        return tableCoords
+    def getTablePos(self):
+        lis = []
+        for row in range(len(self.map)):
+            for char in range(len(self.map[row])):
+                if self.isTable([row,char]):
+                    lis.append([row,char])
+        return lis
+
 
     def updateTables(self):
-        for tab in self.tables:
-            tab.update()
+        for row in range(len(self.map)):
+            for char in range(len(self.map[row])):
+                if self.isTable([row,char]):
+                    self.map[row][char] = ["🚫","🍴"][np.random.choice([0,1],p=[.9,.1])]
 
     def display(self):
         self.screen.fill((255, 255, 255))
-        for x in range(self.size):
-            for y in range(self.size):
+        for x in range(len(self.map)):
+            for y in range(len(self.map[0])):
                 toBlit = None
                 doubleBlit = False
-                if self.agent_pos == [x, y]:
+                curChar = self.map[y][x]
+                if list(self.agent_pos) == [y,x]:
                     toBlit = self.samuel
-                for tab in self.tables:
-                    if all(tab.coords == [x, y]):
-                        toBlit = self.table
-                        if not tab.open:
-                            doubleBlit = True
-                for obs in self.obstacles:
-                    if x in range(obs[0][0], obs[1][0]+1):
-                        if y in range(obs[0][1], obs[1][1]+1):
-                            toBlit = self.javier
+                elif curChar == "🆘":
+                    toBlit = self.javier
+                elif self.isTable([y,x]):
+                    if curChar == "🚫":
+                        doubleBlit = True
+                    toBlit = self.table
                 if not toBlit:
                     continue
-                self.screen.blit(toBlit, (64*x, 64*y))
+                self.screen.blit(toBlit, (self.square_size*x,self.square_size*y))
                 if doubleBlit:
-                    self.screen.blit(self.goose, (64*x, 64*y))
+                    self.screen.blit(self.goose, (self.square_size*x,self.square_size*y))
         pygame.display.flip()
         time.sleep(.1)
         # actionList = ["➡️","⬇️","⬅️","⬆️"]
@@ -91,22 +76,24 @@ class DotGym(gym.Env):
 
 
     def __init__(self):
-        self.screen = pygame.display.set_mode((64 * 10, 64 * 10))
-        self.samuel = pygame.transform.scale(pygame.image.load("samuel.png").convert_alpha(), (64, 64))
-        self.goose = pygame.transform.scale(pygame.image.load("goose.png").convert_alpha(), (64, 64))
-        self.table = pygame.transform.scale(pygame.image.load("table.png").convert_alpha(), (64, 64))
-        self.javier = pygame.transform.scale(pygame.image.load("javier.png").convert_alpha(), (64, 64))
+        self.square_size = 28
+        self.screen = pygame.display.set_mode((self.square_size * 31, self.square_size * 31))
+        self.samuel = pygame.transform.scale(pygame.image.load("samuel.png").convert_alpha(), (self.square_size, self.square_size))
+        self.goose = pygame.transform.scale(pygame.image.load("goose.png").convert_alpha(), (self.square_size, self.square_size))
+        self.table = pygame.transform.scale(pygame.image.load("table.png").convert_alpha(), (self.square_size, self.square_size))
+        self.javier = pygame.transform.scale(pygame.image.load("javier.png").convert_alpha(), (self.square_size, self.square_size))
         self.clock = pygame.time.Clock()
         self.delta_time = 0.1
+        with open("map.txt","r") as reader:
+            self.map = [list(l.strip()) for l in reader.readlines()]
         self.update_interval = 5
-        self.size = 10
         self.stepNum = 0
-        self.obstacles = [((3,2),(5,6))]
-        self.tables = [Table(self.genTableCoords())for i in range(4)]
-        self.agent_pos = np.random.random_integers(0,self.size-1,size=2)
-        self.obs_space = gym.spaces.Dict({
-            "agent":gym.spaces.Box(0,self.size-1,shape=(2,),dtype=int),
-            "target":gym.spaces.Box(0,self.size-1,shape=(2,),dtype=int)#TODO: Change the state
+        self.agent_pos = np.random.random_integers(0,min(len(self.map),len(self.map[0])),size=2)
+        while not self.validCoord(self.agent_pos):
+            self.agent_pos = np.random.random_integers(0,min(len(self.map),len(self.map[0])),size=2)
+        self.obs_space = gym.spaces.Dict({#TODO: Fix state
+            "agent":gym.spaces.Box(0,min(len(self.map),len(self.map[0])),shape=(2,),dtype=int),
+            "target":gym.spaces.Box(0,min(len(self.map),len(self.map[0])),shape=(2,),dtype=int)#TODO: Change the state
         })
         self.action_space = gym.spaces.Discrete(4)
         self.action_to_direction = {
@@ -118,23 +105,31 @@ class DotGym(gym.Env):
 
     def reset(self,seed):
         super().reset(seed)
-        self.agent_pos = np.random.random_integers(0,self.size-1,size=2)
+        self.agent_pos = np.random.random_integers(0,min(len(self.map),len(self.map[0])),size=2)
         self.stepNum = 0
         return self.get_obs()
     
+
+    def validCoord(self, coord):
+        char = self.map[coord[0]][coord[1]]
+        return char == "_" or char =="🍴"
+
     def reward(self):
-        isOpenTable = any([tab.open for tab in self.tables])
-        if isOpenTable:
-            return -1*self.distance(sorted([tab for tab in self.tables if tab.open],key=lambda x:self.distance(x.coords,self.agent_pos))[0].coords,self.agent_pos)
-        else:
+        try:
+            return -1*self.distance(sorted([tab for tab in self.getTablePos() if self.map[tab[0]][tab[1]]=="🍴"],key=lambda x:self.distance(x,self.agent_pos))[0],self.agent_pos)
+        except:
             return -9999
 
     def step(self,action):
         if self.stepNum % self.update_interval == 0:
             self.updateTables()
         self.last_action = action
-        newCoord = list(np.clip(np.array(self.agent_pos)+np.array(self.action_to_direction[action]),0,self.size-1))
-        self.agent_pos = newCoord if not self.inObs(newCoord) else self.agent_pos
+        
+        newCoord = list(np.array([np.clip(self.agent_pos[0]+self.action_to_direction[action][0], 0, len(self.map)-1),  # Limit x within [x_min, x_max]
+        np.clip(self.agent_pos[1]+self.action_to_direction[action][1], 0, len(self.map[0])-1)   # Limit y within [y_min, y_max]
+        ]))
+
+        self.agent_pos = newCoord if self.validCoord(newCoord) else self.agent_pos
         reward = self.reward()
         truncated = False
         terminated = self.hasWon()
