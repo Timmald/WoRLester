@@ -9,7 +9,9 @@ class DotGym(gym.Env):
         return math.sqrt((coord2[0]-coord1[0])**2+(coord2[1]-coord1[1])**2)
 
     def display(self):
-        charArr = ["⬜️"]*self.size*self.size
+        charArr = []
+        for i in range(self.size):
+            charArr.append(["⬜️"]*self.size)#TODO: Pointer shit
         charArr[self.agent_pos[0]][self.agent_pos[1]] = "🕵️"
         charArr[self.target_pos[0]][self.target_pos[1]] = "🎯"
         print("-------------------")
@@ -19,8 +21,8 @@ class DotGym(gym.Env):
 
     def __init__(self,size):
         self.size = size
-        self.target_pos = [-1,-1]
-        self.agent_pos = [-1,-1]
+        self.target_pos = np.random.random_integers(0,self.size-1,size=2)
+        self.agent_pos = np.random.random_integers(0,self.size-1,size=2)
         self.obs_space = gym.spaces.Dict({
             "agent":gym.spaces.Box(0,size-1,shape=(2,),dtype=int),
             "target":gym.spaces.Box(0,size-1,shape=(2,),dtype=int)
@@ -35,12 +37,12 @@ class DotGym(gym.Env):
 
     def reset(self,seed):
         super().reset(seed)
-        self.target_pos = np.random_integers(0,self.size-1,size=2,dtype=int)
-        self.agent_pos = np.random_integers(0,self.size-1,size=2,dtype=int)
+        self.target_pos = np.random.random_integers(0,self.size-1,size=2)
+        self.agent_pos = np.random.random_integers(0,self.size-1,size=2)
         return {"agent":self.agent_pos,"target":self.target_pos}
     
     def step(self,action):
-        self.agent_pos = list(np.array(self.agent_pos)+np.array(self.action_to_direction[action]))
+        self.agent_pos = list(np.clip(np.array(self.agent_pos)+np.array(self.action_to_direction[action]),0,self.size-1))
         reward = -1*self.distance(self.target_pos,self.agent_pos)
         truncated = False
         terminated = self.agent_pos == self.target_pos
@@ -48,5 +50,6 @@ class DotGym(gym.Env):
         return {"agent":self.agent_pos,"target":self.target_pos},reward,terminated,truncated
 
 mygym = DotGym(5)
-mygym.step()
+mygym.step(0)
+mygym.step(2)
         
